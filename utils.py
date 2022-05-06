@@ -59,32 +59,11 @@ def hist(z):
     plt.show()
 
 
-def convert(line):
-    line = line[1:-1]
-    return np.array([int(item) for item in line.split(' ') if item != ''])
-
-def convert1(line):
-    line = line[1:-1]
-    return np.array([float(item) for item in line.split(' ') if item != ''])
-
-def drop_odd(arr):
-    return arr[np.where(arr < 91)[0]]
-
-def make_label(arr):
-    ar = arr[np.where(arr > 0)[0]]
-    return len(ar[np.where(ar < 46)[0]])
-
-def number_in_period(arr, start=-1, end=91):
-    return len(np.where(np.logical_and(arr > start, arr < end))[0])
-#from lightgbm import LGBMRegressor
-
-
-probs1 = []
-probs2 = []
-
 def pois(a, mu=1):
     return np.exp(mu*(-1)) * (mu ** a) / math.factorial(a)
-def prob_hand(a, probs1=probs1, probs2=probs2):
+
+
+def prob_hand(a, probs1, probs2):
     normed = 1.0
     win1 = 0.0
     for i in range (0, 20):
@@ -96,7 +75,7 @@ def prob_hand(a, probs1=probs1, probs2=probs2):
     win1 = win1 / normed
     return win1, 1 - win1
 
-def prob_x():
+def prob_x(probs1, probs2):
     prob_x = 0.0
     for i in range (0, 20):
         for j in range (0, 20):
@@ -104,7 +83,7 @@ def prob_x():
                 prob_x += probs1[i] * probs2[j]
     return prob_x, 1 - prob_x
 
-def prob_total(a, probs1=probs1, probs2=probs2):
+def prob_total(a, probs1, probs2):
     normed = 1.0
     under = 0.0
     for i in range (0, 20):
@@ -127,7 +106,7 @@ def prob_ind_total(a, probs1):
     under = under / normed
     return under, 1 - under
 
-def prob_hand_1(a, probs1=probs1, probs2=probs2): #для +0.25
+def prob_hand_1(a, probs1, probs2): #для +0.25
     normed = 1.0
     win1 = 0.0
     half_win = 0.0
@@ -139,7 +118,7 @@ def prob_hand_1(a, probs1=probs1, probs2=probs2): #для +0.25
                 half_win += probs1[i] * probs2[j]
     return win1, half_win, 1 - win1 - half_win
 
-def prob_hand_3(a, probs1=probs1, probs2=probs2): #для -0.25
+def prob_hand_3(a, probs1, probs2): #для -0.25
     normed = 1.0
     win1 = 0.0
     half_lose = 0.0
@@ -151,7 +130,7 @@ def prob_hand_3(a, probs1=probs1, probs2=probs2): #для -0.25
                 half_lose += probs1[i] * probs2[j]
     return win1, half_lose, 1 - win1 - half_lose
 
-def prob_total_1(a, probs1=probs1, probs2=probs2): #для +2.25
+def prob_total_1(a, probs1, probs2): #для +2.25
     normed = 1.0
     win1 = 0.0
     half_win = 0.0
@@ -163,8 +142,7 @@ def prob_total_1(a, probs1=probs1, probs2=probs2): #для +2.25
                 half_win += probs1[i] * probs2[j]
     return win1, half_win, 1 - win1 - half_win
 
-
-def prob_total_3(a, probs1=probs1, probs2=probs2): #для 2.75
+def prob_total_3(a, probs1, probs2): #для 2.75
     normed = 1.0
     win1 = 0.0
     half_lose = 0.0
@@ -175,3 +153,74 @@ def prob_total_3(a, probs1=probs1, probs2=probs2): #для 2.75
             if (np.round(i + j - 0.25) == a):
                 half_lose += probs1[i] * probs2[j]
     return win1, half_lose, 1 - win1 - half_lose
+
+
+def value_1(row):
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, row['pred_home']))
+        probs2.append(pois(i, row['pred_away']))
+        
+    odd1 = row['f1_open']
+    h = np.round(row['hand_open'] * 4)
+
+    if (h % 2 == 0):
+        value = prob_hand(row['hand_open'], probs1, probs2)[0] * odd1
+        return value
+    elif (h % 4 == 1):
+        value = \
+            prob_hand_1(row['hand_open'], probs1, probs2)[0] * odd1 + \
+            prob_hand_1(row['hand_open'], probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = \
+            prob_hand_3(row['hand_open'], probs1, probs2)[0] * odd1 + \
+            prob_hand_3(row['hand_open'], probs1, probs2)[1] * 0.5
+        return value
+
+
+def value_2(row):
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, row['pred_home']))
+        probs2.append(pois(i, row['pred_away']))
+
+    odd1 = row['f2_open']
+    h = np.round(row['hand_open'] * 4)
+    
+    if (h % 2 == 0):
+        value = prob_hand(row['hand_open'], probs1, probs2)[1] * odd1
+        return value
+    elif (h % 4 == 3):
+        value = prob_hand_3(row['hand_open'], probs1, probs2)[2] * odd1 + prob_hand_3(row['hand_open'], probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = prob_hand_1(row['hand_open'], probs1, probs2)[2] * odd1 + prob_hand_1(row['hand_open'], probs1, probs2)[1] * 0.5
+        return value
+
+
+def hand_income1(row):
+    if row['res'] + row['hand_open'] == 0:
+        return 0
+    if row['res'] + row['hand_open'] == 0.25:    
+        return (row['f1_open'] - 1) / 2
+    if row['res'] + row['hand_open'] == -0.25:
+        return -0.5
+    if row['res'] + row['hand_open'] < -0.4:
+        return -1
+    if row['res'] + row['hand_open'] > 0.4:
+        return row['f1_open'] - 1
+
+def hand_income2(row):
+    if row["res"] + row['hand_open'] == 0:
+        return 0
+    if row["res"] + row['hand_open'] == -0.25:
+        return (row['f2_open'] - 1) / 2
+    if row["res"] + row['hand_open'] == 0.25:
+        return -0.5
+    if (row["res"] + row['hand_open'] < -0.4):
+        return row['f2_open'] - 1
+    if (row["res"] + row['hand_open'] > 0.4):
+        return -1
