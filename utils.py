@@ -224,3 +224,75 @@ def hand_income2(row):
         return row['f2_open'] - 1
     if (row["res"] + row['hand_open'] > 0.4):
         return -1
+
+
+def value_under(row):
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, row['pred_home']))
+        probs2.append(pois(i, row['pred_away']))
+
+    odd1 = row['under_open']
+    h = np.round(row['total_open'] * 4)
+    
+    if (h % 2 == 0):
+        value = prob_total(row['total_open'], probs1, probs2)[0] * odd1
+        return value
+    elif (h % 4 == 1):
+        value = prob_total_1(row['total_open'], probs1, probs2)[0] * odd1 + prob_total_1(row['total_open'], probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = prob_total_3(row['total_open'], probs1, probs2)[0] * odd1 + prob_total_3(row['total_open'], probs1, probs2)[1] * 0.5
+        return value
+    
+
+def value_over(row):
+    odd1 = row['over_open']
+    h = np.round(row['total_open'] * 4)
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, row['pred_home']))
+        probs2.append(pois(i, row['pred_away']))
+
+    if (h % 2 == 0):
+        value = prob_total(row['total_open'], probs1, probs2)[1] * odd1
+        return value
+    elif (h % 4 == 3):
+        value = prob_total_3(row['total_open'], probs1, probs2)[2] * odd1 + prob_total_3(row['total_open'], probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = prob_total_1(row['total_open'], probs1, probs2)[2] * odd1 + prob_total_1(row['total_open'], probs1, probs2)[1] * 0.5
+        return value
+
+
+def over_income(row):
+    if row['res'] - row['total_open'] == 0:
+        return 0
+    if row['res'] - row['total_open'] == 0.25:
+        return (row['over_open'] - 1) / 2
+    if row['res'] - row['total_open'] == -0.25:
+        return -0.5
+    if (row['res'] - row['total_open'] < -0.4):
+        return -1
+    if (row['res'] - row['total_open'] > 0.4):
+        return row['over_open'] - 1
+
+
+def under_income(row):
+    if row['res'] - row['total_open'] == 0:
+        return 0
+    if row['res'] - row['total_open'] == -0.25:
+        return (row['under_open'] - 1) / 2
+    if row['res'] - row['total_open'] == 0.25:
+        return -0.5
+    if (row['res'] - row['total_open'] < -0.4):
+        return row['under_open'] - 1
+    if (row['res'] - row['total_open'] > 0.4):
+        return -1
+
+def convert_score(x):
+    s = x.split(":")
+    
+    return float(s[0]) - float(s[1])
