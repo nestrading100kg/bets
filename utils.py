@@ -44,6 +44,7 @@ from scipy.stats import poisson,skellam
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from sklearn.ensemble import RandomForestRegressor
+from numba import njit
 
 
 def hist(z):
@@ -58,22 +59,6 @@ def hist(z):
     
     plt.show()
 
-
-def pois(a, mu=1):
-    return np.exp(mu*(-1)) * (mu ** a) / math.factorial(a)
-
-
-def prob_hand(a, probs1, probs2):
-    normed = 1.0
-    win1 = 0.0
-    for i in range (0, 20):
-        for j in range (0, 20):
-            if (i + a > j):
-                win1 += probs1[i] * probs2[j]
-            if (i + a == j):
-                normed -= probs1[i] * probs2[j]
-    win1 = win1 / normed
-    return win1, 1 - win1
 
 def prob_x(probs1, probs2):
     prob_x = 0.0
@@ -94,6 +79,38 @@ def prob_ind_total(a, probs1):
     under = under / normed
     return under, 1 - under
 
+
+from scipy.stats import poisson
+
+
+@njit
+def factorial(x):
+    if x == 0:
+        return 1
+
+    return x * factorial(x - 1)
+
+@njit
+def pois(a, mu=1):
+    return np.exp(mu*(-1)) * (mu ** a) / factorial(a)
+    # return poisson.pmf(a, mu)
+    
+
+@njit
+def prob_hand(a, probs1, probs2):
+    normed = 1.0
+    win1 = 0.0
+    for i in range (0, 20):
+        for j in range (0, 20):
+            if (i + a > j):
+                win1 += probs1[i] * probs2[j]
+            if (i + a == j):
+                normed -= probs1[i] * probs2[j]
+    win1 = win1 / normed
+    return win1, 1 - win1
+
+
+@njit
 def prob_hand_1(a, probs1, probs2): #для +0.25
     normed = 1.0
     win1 = 0.0
@@ -106,6 +123,8 @@ def prob_hand_1(a, probs1, probs2): #для +0.25
                 half_win += probs1[i] * probs2[j]
     return win1, half_win, 1 - win1 - half_win
 
+
+@njit
 def prob_hand_3(a, probs1, probs2): #для -0.25
     normed = 1.0
     win1 = 0.0
@@ -118,7 +137,7 @@ def prob_hand_3(a, probs1, probs2): #для -0.25
                 half_lose += probs1[i] * probs2[j]
     return win1, half_lose, 1 - win1 - half_lose
 
-
+@njit
 def prob_total(a, probs1, probs2):
     normed = 1.0
     under = 0.0
@@ -131,7 +150,7 @@ def prob_total(a, probs1, probs2):
     under = under / normed
     return under, 1 - under
 
-
+@njit
 def prob_total_1(a, probs1, probs2): #для 2.25
     normed = 1.0
     win1 = 0.0
@@ -144,7 +163,7 @@ def prob_total_1(a, probs1, probs2): #для 2.25
                 half_win += probs1[i] * probs2[j]
     return win1, half_win, 1 - win1 - half_win
 
-
+@njit
 def prob_total_3(a, probs1, probs2): #для 2.75
     normed = 1.0
     win1 = 0.0
@@ -201,12 +220,60 @@ def value_1(row):
         return value
 
 
+@njit
+def value_1_new(odd, hand, exp1, exp2):
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
+        
+    odd1 = odd
+    h = np.round(hand * 4)
+
+    if (h % 2 == 0):
+        value = prob_hand(hand, probs1, probs2)[0] * odd1
+        return value
+    elif (h % 4 == 1):
+        value = \
+            prob_hand_1(hand, probs1, probs2)[0] * odd1 + \
+            prob_hand_1(hand, probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = \
+            prob_hand_3(hand, probs1, probs2)[0] * odd1 + \
+            prob_hand_3(hand, probs1, probs2)[1] * 0.5
+        return value
+
+
 def value_2(row):
     odd = row["f2_open"]
     hand = row["hand_open"]
     exp1 = row["pred_home"]
     exp2 = row["pred_away"]
 
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
+
+    odd1 = odd
+    h = np.round(hand * 4)
+    
+    if (h % 2 == 0):
+        value = prob_hand(hand, probs1, probs2)[1] * odd1
+        return value
+    elif (h % 4 == 3):
+        value = prob_hand_3(hand, probs1, probs2)[2] * odd1 + prob_hand_3(hand, probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = prob_hand_1(hand, probs1, probs2)[2] * odd1 + prob_hand_1(hand, probs1, probs2)[1] * 0.5
+        return value
+
+
+@njit
+def value_2_new(odd, hand, exp1, exp2):
     probs1 = []
     probs2 = []
     for i in range(0, 20):
@@ -253,12 +320,54 @@ def value_under(row):
         return value
 
 
+@njit
+def value_under_new(odd, total, exp1, exp2):
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
+
+    odd1 = odd
+    h = np.round(total * 4)
+    
+    if (h % 2 == 0):
+        value = prob_total(total, probs1, probs2)[0] * odd1
+        return value
+    elif (h % 4 == 1):
+        value = prob_total_1(total, probs1, probs2)[0] * odd1 + prob_total_1(total, probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = prob_total_3(total, probs1, probs2)[0] * odd1 + prob_total_3(total, probs1, probs2)[1] * 0.5
+        return value
+
+
 def value_over(row):
     odd = row["over_open"]
     total = row["total_open"]
     exp1 = row["pred_home"]
     exp2 = row["pred_away"]
     
+    odd1 = odd
+    h = np.round(total * 4)
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
+
+    if (h % 2 == 0):
+        value = prob_total(total, probs1, probs2)[1] * odd1
+        return value
+    elif (h % 4 == 3):
+        value = prob_total_3(total, probs1, probs2)[2] * odd1 + prob_total_3(total, probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = prob_total_1(total, probs1, probs2)[2] * odd1 + prob_total_1(total, probs1, probs2)[1] * 0.5
+        return value
+
+@njit
+def value_over_new(odd, total, exp1, exp2):
     odd1 = odd
     h = np.round(total * 4)
     probs1 = []
