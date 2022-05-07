@@ -268,31 +268,44 @@ def value_over(row):
 
 
 def over_income(row):
-    if row['res'] - row['total_open'] == 0:
+    if row['sum_res'] - row['total_open'] == 0:
         return 0
-    if row['res'] - row['total_open'] == 0.25:
+    if row['sum_res'] - row['total_open'] == 0.25:
         return (row['over_open'] - 1) / 2
-    if row['res'] - row['total_open'] == -0.25:
+    if row['sum_res'] - row['total_open'] == -0.25:
         return -0.5
-    if (row['res'] - row['total_open'] < -0.4):
+    if (row['sum_res'] - row['total_open'] < -0.4):
         return -1
-    if (row['res'] - row['total_open'] > 0.4):
+    if (row['sum_res'] - row['total_open'] > 0.4):
         return row['over_open'] - 1
 
 
 def under_income(row):
-    if row['res'] - row['total_open'] == 0:
+    if row['sum_res'] - row['total_open'] == 0:
         return 0
-    if row['res'] - row['total_open'] == -0.25:
+    if row['sum_res'] - row['total_open'] == -0.25:
         return (row['under_open'] - 1) / 2
-    if row['res'] - row['total_open'] == 0.25:
+    if row['sum_res'] - row['total_open'] == 0.25:
         return -0.5
-    if (row['res'] - row['total_open'] < -0.4):
+    if (row['sum_res'] - row['total_open'] < -0.4):
         return row['under_open'] - 1
-    if (row['res'] - row['total_open'] > 0.4):
+    if (row['sum_res'] - row['total_open'] > 0.4):
         return -1
 
-def convert_score(x):
-    s = x.split(":")
-    
-    return float(s[0]) - float(s[1])
+def convert_score_diff(x):
+    try:
+        s = x.split(":")
+        
+        return float(s[0]) - float(s[1])
+    except:
+        print(x)
+        return -10000
+
+def convert_score_sum(x):
+    try:
+        s = x.split(":")
+        
+        return float(s[0]) - float(s[1])
+    except:
+        print(x)
+        return -10000
