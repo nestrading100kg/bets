@@ -171,7 +171,12 @@ def prob_total_sum(a, probs):
 
 
 
-def value_1(odd, hand, exp1, exp2):
+def value_1(row):
+    odd = row["f1_open"]
+    hand = row["hand_open"]
+    exp1 = row["pred_home"]
+    exp2 = row["pred_away"]
+
     probs1 = []
     probs2 = []
     for i in range(0, 20):
@@ -196,7 +201,12 @@ def value_1(odd, hand, exp1, exp2):
         return value
 
 
-def value_2(odd, hand, exp1, exp2):
+def value_2(row):
+    odd = row["f2_open"]
+    hand = row["hand_open"]
+    exp1 = row["pred_home"]
+    exp2 = row["pred_away"]
+
     probs1 = []
     probs2 = []
     for i in range(0, 20):
@@ -217,7 +227,12 @@ def value_2(odd, hand, exp1, exp2):
         return value
 
 
-def value_under(odd, total, exp1, exp2):
+def value_under(row):
+    odd = row["under_open"]
+    total = row["total_open"]
+    exp1 = row["pred_home"]
+    exp2 = row["pred_away"]
+    
     probs1 = []
     probs2 = []
     for i in range(0, 20):
@@ -238,7 +253,12 @@ def value_under(odd, total, exp1, exp2):
         return value
 
 
-def value_over(odd, total, exp1, exp2):
+def value_over(row):
+    odd = row["over_open"]
+    total = row["total_open"]
+    exp1 = row["pred_home"]
+    exp2 = row["pred_away"]
+    
     odd1 = odd
     h = np.round(total * 4)
     probs1 = []
