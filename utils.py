@@ -83,18 +83,6 @@ def prob_x(probs1, probs2):
                 prob_x += probs1[i] * probs2[j]
     return prob_x, 1 - prob_x
 
-def prob_total(a, probs1, probs2):
-    normed = 1.0
-    under = 0.0
-    for i in range (0, 20):
-        for j in range (0, 20):
-            if (i + j < a):
-                under += probs1[i] * probs2[j]
-            if (i + j == a):
-                normed -= probs1[i] * probs2[j]
-    under = under / normed
-    return under, 1 - under
-
 def prob_ind_total(a, probs1):
     normed = 1.0
     under = 0.0
@@ -130,7 +118,21 @@ def prob_hand_3(a, probs1, probs2): #для -0.25
                 half_lose += probs1[i] * probs2[j]
     return win1, half_lose, 1 - win1 - half_lose
 
-def prob_total_1(a, probs1, probs2): #для +2.25
+
+def prob_total(a, probs1, probs2):
+    normed = 1.0
+    under = 0.0
+    for i in range (0, 20):
+        for j in range (0, 20):
+            if (i + j < a):
+                under += probs1[i] * probs2[j]
+            if (i + j == a):
+                normed -= probs1[i] * probs2[j]
+    under = under / normed
+    return under, 1 - under
+
+
+def prob_total_1(a, probs1, probs2): #для 2.25
     normed = 1.0
     win1 = 0.0
     half_win = 0.0
@@ -138,9 +140,10 @@ def prob_total_1(a, probs1, probs2): #для +2.25
         for j in range (0, 20):
             if (i + j < a - 0.5):
                 win1 += probs1[i] * probs2[j]
-            if (np.round(i + j + 0.25) == a):
+            if (np.round(i + j + 0.25, 2) == a):
                 half_win += probs1[i] * probs2[j]
     return win1, half_win, 1 - win1 - half_win
+
 
 def prob_total_3(a, probs1, probs2): #для 2.75
     normed = 1.0
@@ -150,54 +153,108 @@ def prob_total_3(a, probs1, probs2): #для 2.75
         for j in range (0, 20):
             if (i + j < a - 0.5):
                 win1 += probs1[i] * probs2[j]
-            if (np.round(i + j - 0.25) == a):
+            if (np.round(i + j - 0.25, 2) == a):
                 half_lose += probs1[i] * probs2[j]
     return win1, half_lose, 1 - win1 - half_lose
 
 
-def value_1(row):
+def prob_total_sum(a, probs):
+    normed = 1.0
+    under = 0.0
+    for i in range (0, 20):
+        if (i < a):
+            under += probs[i]
+        if (i == a):
+            normed -= probs[i]
+    under = under / normed
+    return under, 1 - under
+
+
+
+def value_1(odd, hand, exp1, exp2):
     probs1 = []
     probs2 = []
     for i in range(0, 20):
-        probs1.append(pois(i, row['pred_home']))
-        probs2.append(pois(i, row['pred_away']))
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
         
-    odd1 = row['f1_open']
-    h = np.round(row['hand_open'] * 4)
+    odd1 = odd
+    h = np.round(hand * 4)
 
     if (h % 2 == 0):
-        value = prob_hand(row['hand_open'], probs1, probs2)[0] * odd1
+        value = prob_hand(hand, probs1, probs2)[0] * odd1
         return value
     elif (h % 4 == 1):
         value = \
-            prob_hand_1(row['hand_open'], probs1, probs2)[0] * odd1 + \
-            prob_hand_1(row['hand_open'], probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+            prob_hand_1(hand, probs1, probs2)[0] * odd1 + \
+            prob_hand_1(hand, probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
         return value
     else:
         value = \
-            prob_hand_3(row['hand_open'], probs1, probs2)[0] * odd1 + \
-            prob_hand_3(row['hand_open'], probs1, probs2)[1] * 0.5
+            prob_hand_3(hand, probs1, probs2)[0] * odd1 + \
+            prob_hand_3(hand, probs1, probs2)[1] * 0.5
         return value
 
 
-def value_2(row):
+def value_2(odd, hand, exp1, exp2):
     probs1 = []
     probs2 = []
     for i in range(0, 20):
-        probs1.append(pois(i, row['pred_home']))
-        probs2.append(pois(i, row['pred_away']))
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
 
-    odd1 = row['f2_open']
-    h = np.round(row['hand_open'] * 4)
+    odd1 = odd
+    h = np.round(hand * 4)
     
     if (h % 2 == 0):
-        value = prob_hand(row['hand_open'], probs1, probs2)[1] * odd1
+        value = prob_hand(hand, probs1, probs2)[1] * odd1
         return value
     elif (h % 4 == 3):
-        value = prob_hand_3(row['hand_open'], probs1, probs2)[2] * odd1 + prob_hand_3(row['hand_open'], probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        value = prob_hand_3(hand, probs1, probs2)[2] * odd1 + prob_hand_3(hand, probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
         return value
     else:
-        value = prob_hand_1(row['hand_open'], probs1, probs2)[2] * odd1 + prob_hand_1(row['hand_open'], probs1, probs2)[1] * 0.5
+        value = prob_hand_1(hand, probs1, probs2)[2] * odd1 + prob_hand_1(hand, probs1, probs2)[1] * 0.5
+        return value
+
+
+def value_under(odd, total, exp1, exp2):
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
+
+    odd1 = odd
+    h = np.round(total * 4)
+    
+    if (h % 2 == 0):
+        value = prob_total(total, probs1, probs2)[0] * odd1
+        return value
+    elif (h % 4 == 1):
+        value = prob_total_1(total, probs1, probs2)[0] * odd1 + prob_total_1(total, probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = prob_total_3(total, probs1, probs2)[0] * odd1 + prob_total_3(total, probs1, probs2)[1] * 0.5
+        return value
+
+
+def value_over(odd, total, exp1, exp2):
+    odd1 = odd
+    h = np.round(total * 4)
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
+
+    if (h % 2 == 0):
+        value = prob_total(total, probs1, probs2)[1] * odd1
+        return value
+    elif (h % 4 == 3):
+        value = prob_total_3(total, probs1, probs2)[2] * odd1 + prob_total_3(total, probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
+        return value
+    else:
+        value = prob_total_1(total, probs1, probs2)[2] * odd1 + prob_total_1(total, probs1, probs2)[1] * 0.5
         return value
 
 
@@ -224,48 +281,6 @@ def hand_income2(row):
         return row['f2_open'] - 1
     if (row["res"] + row['hand_open'] > 0.4):
         return -1
-
-
-def value_under(row):
-    probs1 = []
-    probs2 = []
-    for i in range(0, 20):
-        probs1.append(pois(i, row['pred_home']))
-        probs2.append(pois(i, row['pred_away']))
-
-    odd1 = row['under_open']
-    h = np.round(row['total_open'] * 4)
-    
-    if (h % 2 == 0):
-        value = prob_total(row['total_open'], probs1, probs2)[0] * odd1
-        return value
-    elif (h % 4 == 1):
-        value = prob_total_1(row['total_open'], probs1, probs2)[0] * odd1 + prob_total_1(row['total_open'], probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
-        return value
-    else:
-        value = prob_total_3(row['total_open'], probs1, probs2)[0] * odd1 + prob_total_3(row['total_open'], probs1, probs2)[1] * 0.5
-        return value
-    
-
-def value_over(row):
-    odd1 = row['over_open']
-    h = np.round(row['total_open'] * 4)
-    probs1 = []
-    probs2 = []
-    for i in range(0, 20):
-        probs1.append(pois(i, row['pred_home']))
-        probs2.append(pois(i, row['pred_away']))
-
-    if (h % 2 == 0):
-        value = prob_total(row['total_open'], probs1, probs2)[1] * odd1
-        return value
-    elif (h % 4 == 3):
-        value = prob_total_3(row['total_open'], probs1, probs2)[2] * odd1 + prob_total_3(row['total_open'], probs1, probs2)[1] * ((odd1 - 1) / 2 + 1)
-        return value
-    else:
-        value = prob_total_1(row['total_open'], probs1, probs2)[2] * odd1 + prob_total_1(row['total_open'], probs1, probs2)[1] * 0.5
-        return value
-
 
 def over_income(row):
     if row['sum_res'] - row['total_open'] == 0:
