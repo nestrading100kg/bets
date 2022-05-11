@@ -60,6 +60,7 @@ def hist(z):
     plt.show()
 
 
+@njit
 def prob_x(probs1, probs2):
     prob_x = 0.0
     for i in range (0, 20):
@@ -67,6 +68,7 @@ def prob_x(probs1, probs2):
             if (i == j):
                 prob_x += probs1[i] * probs2[j]
     return prob_x, 1 - prob_x
+
 
 def prob_ind_total(a, probs1):
     normed = 1.0
@@ -189,6 +191,21 @@ def prob_total_sum(a, probs):
     return under, 1 - under
 
 
+@njit
+def value_x_new(odd, exp1, exp2):
+    probs1 = []
+    probs2 = []
+    for i in range(0, 20):
+        probs1.append(pois(i, exp1))
+        probs2.append(pois(i, exp2))
+        
+    value = prob_x(probs1, probs2)[0] * odd
+    return value
+
+def x_income(row):
+    if row['res'] == 0:
+        return 1
+    return 0
 
 def value_1(row):
     odd = row["f1_open"]
